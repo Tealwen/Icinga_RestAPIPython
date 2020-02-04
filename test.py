@@ -6,10 +6,28 @@ db = mysql.connector.connect(host="localhost",
 
 cursor =db.cursor()
 
-cursor.execute("SELECT * FROM switches")
+cursor.execute("SELECT *  FROM switches INNER JOIN configswitches ON switches.ConfigSwitchId = configswitches.ConfigSwitchId INNER JOIN modeles ON switches.ModeleId = modeles.ModeleId")
 
 result = cursor.fetchall()
 
-for x in result:
-    print(x)
+
+#print(result)
+
+for row in result:
+    
+    print("Ip : "+row[8])
+    print("Nom : "+row[11])
+    print("Marque : "+row[10])
+    print("=================")
+    
+    
+
+
+
+
+    
+
+    
+
+
 
