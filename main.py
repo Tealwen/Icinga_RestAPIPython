@@ -2,8 +2,9 @@ import mysql.connector
 import requests
 import json
 from icinga2api.client import Client
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from icinga2 import Icinga2API
 
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning) #Suppression des warnings lié au fait que l'on est un certificat ssl non valide 
 
 def connectobdd():
@@ -21,19 +22,35 @@ def connectobdd():
         print("Information recuperer dans le base de donnée : ")
         print("Ip : "+ip)
         print("Switch : "+switch)
-        print("===============================================================")
-        addHost(ip, switch)
+        verifier(switch, ip) #Verification si le switch existe deja sur l'hyperviseur !
+        
+
+    db.close()
 
 def addHost(ip, switch):
 
-    client = Client('https://172.20.20.73:5665', 'felix', 'felix22')
-    client.objects.create(
-        'Host',
-        switch,
-        ['generic-host'],
-        {'address': ip})
+    client = Client('https://172.20.20.73:5665', 'felix', 'felix22') #connexion a l'API REST
+    client.objects.create('Host', switch, ['generic-host'], {'address': ip}) #Ajout d'un d'un switch avec les information recuperer dans la BDD
 
 
+
+
+
+
+def verifier(switch, ip):
+
+    api = Icinga2API(username="felix", password="felix22", url="https://172.20.20.73:5665") #Connexion a l'API REST
+    
+    if api.hosts.exists(switch) == True: #ON verifie sur le switch existe grace a l'api qui nous repondra True ou False
+        print("[Iconga2] - Le Switch Existe Déja") 
+        print("===============================================================")
+        pass # Si c'est true on ne fait rien
+    else:
+        print("[Icinga2] - Le Switch N'existe Pas")
+        print("===============================================================")
+        addHost(ip, switch) #sinon on envoie les infos a la fonction ADDHOST !
+
+    
 
 if __name__ == "__main__":
     connectobdd()
