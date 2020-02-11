@@ -5,22 +5,22 @@ from icinga2 import Icinga2API
 
 
 db = mysql.connector.connect(host="127.0.0.1", user="felix", password="felix22", database="srtest2") #connexion a la base de donnée 
-req=db.cursor()
 client = Client('https://172.20.20.73:5665', 'felix', 'felix22') #connexion a l'API REST
 
 def infoBdd():
-
+    
+    req=db.cursor()
     req.execute("SELECT * FROM switches INNER JOIN configswitches ON switches.ConfigSwitchId = configswitches.ConfigSwitchId INNER JOIN modeles ON switches.ModeleId = modeles.ModeleId") # Requete envoyer a la BDD
     reponce= req.fetchall() #Recuperation de tous les information qu'il a pus trouver a la suite de la requete 
 
     for row in reponce:
 
-        idSwitch = row[1]
+        idSwitch= row[0]
         ip = row[10] #Recuperation de la colone 8 avec l'ip
         switch = row[13]+"_"+row[12] #Recuperation de la colone 11 et 10 contenant la marque et le nom du switch
         tag=row[7] #Recuperation de l'information tag
         print("Information recuperer dans le base de donnée : ")
-        print("Id Du Switch : "+idSwitch)
+        print("ID Du Switch : "+ str(idSwitch))
         print("Ip : "+ip)
         print("Switch : "+switch)
         print("Tag : "+str(tag))
@@ -30,10 +30,13 @@ def infoBdd():
     
 
 def addHost(ip, switch, idSwitch):
-
     
+    
+    req=db.cursor()
+    req.execute("UPDATE `switches` SET `Tag` = 0 WHERE `switches`.`SwitchId`="+str(idSwitch))
+    db.commit()
     client.objects.create('Host', switch, ['generic-host'], {'address': ip}) #Ajout d'un d'un switch avec les information recuperer dans la BDD
-    req.execute("UPDATE switches SET tag='0' WHERE SwitchId="+idSwitch+";")
+
 
 def verifier(switch, ip, tag, idSwitch):
     
@@ -58,9 +61,9 @@ def update(switch,ip,tag):
 
 
 
-def relationSwitch():
+"""def relationSwitch():
     
-    req.execute("SELECT")
+    req.execute("SELECT")"""
 
 
     
