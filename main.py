@@ -4,38 +4,39 @@ from icinga2api.client import Client
 from icinga2 import Icinga2API
 
 
-db = mysql.connector.connect(host="127.0.0.1", user="felix", password="felix22", database="srtest2") #connexion a la base de donnée 
+db = mysql.connector.connect(host="172.20.20.74", user="alexylap", password="felix22", database="srtest2") #connexion a la base de donnée 
 client = Client('https://172.20.20.73:5665', 'felix', 'felix22') #connexion a l'API REST
 
 def infoBdd():
     
     req=db.cursor()
-    req.execute("SELECT * FROM switches INNER JOIN configswitches ON switches.ConfigSwitchId = configswitches.ConfigSwitchId INNER JOIN modeles ON switches.ModeleId = modeles.ModeleId") # Requete envoyer a la BDD
+    req.execute("SELECT * FROM Switches INNER JOIN ConfigSwitches ON Switches.ConfigSwitchId = ConfigSwitches.ConfigSwitchId INNER JOIN Modeles ON Switches.ModeleId = Modeles.ModeleId") # Requete envoyer a la BDD
     reponce= req.fetchall() #Recuperation de tous les information qu'il a pus trouver a la suite de la requete 
 
     for row in reponce:
 
         idSwitch= row[0]
-        ip = row[10] #Recuperation de la colone 8 avec l'ip
+        ipNotSplit = row[9] #Recuperation de la colone 9 avec l'ip en CIDR
+        ipSplit = ipNotSplit.split('/') #On coupe la variable pour lui dire que nous voulont separé , l'ip et le CIDR
         switch = row[13]+"_"+row[12] #Recuperation de la colone 11 et 10 contenant la marque et le nom du switch
-        tag=row[7] #Recuperation de l'information tag
-        print("Information recuperer dans le base de donnée : ")
+        tag=row[7] #Recuperation de l'information tag ( qui nous dit si le switch a deja été pris en compte null = nouveau , 0 = rien a faire, 1 = doit etre modifier)
+        
+        print("Information recuperer dans la base de donnée : ")
         print("ID Du Switch : "+ str(idSwitch))
-        print("Ip : "+ip)
+        print("Ip : "+ipSplit[0])
         print("Switch : "+switch)
         print("Tag : "+str(tag))
-        verifier(switch, ip, tag, idSwitch) #Verification si le switch existe deja sur l'hyperviseur !
         
-
-    
+        verifier(switch, ipSplit[0], tag, idSwitch) #Verification si le switch existe deja sur l'hyperviseur !
 
 def addHost(ip, switch, idSwitch):
     
     
     req=db.cursor()
-    req.execute("UPDATE `switches` SET `Tag` = 0 WHERE `switches`.`SwitchId`="+str(idSwitch))
+    req.execute("UPDATE `Switches` SET `Tag` = 0 WHERE `Switches`.`SwitchId`="+str(idSwitch))
     db.commit()
     client.objects.create('Host', switch, ['generic-host'], {'address': ip}) #Ajout d'un d'un switch avec les information recuperer dans la BDD
+    client.actions.restart_process() #Redemarage du service icinga2 pour mettre la map du reseau a jour 
 
 
 def verifier(switch, ip, tag, idSwitch):
@@ -49,26 +50,12 @@ def verifier(switch, ip, tag, idSwitch):
     elif tag == 1: # Si Tag est a 1 le switch est a modifier sur icinga2 
         print("Le Switch a été modifier")
         print("=================================")
-        update(switch,ip,tag)
+        client.objects.delete('Host', switch)
+        addHost(ip, switch, idSwitch)
         
-def update(switch,ip,tag):
-    
-    client.objects.update(
-        'Host',
-        switch,
-        {'address': ip}
-    )
-
-
-
 """def relationSwitch():
     
     req.execute("SELECT")"""
-
-
-    
-
-    
 
 
 if __name__ == "__main__":
