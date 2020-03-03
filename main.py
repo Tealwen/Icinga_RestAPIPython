@@ -1,5 +1,6 @@
 import mysql.connector
 import json
+import requests
 from icinga2api.client import Client
 from icinga2 import Icinga2API
 from enum import Enum 
@@ -11,12 +12,14 @@ class Tag(Enum):
     Delete = 4
 
 db = mysql.connector.connect(host="172.20.20.74", user="alexylap", password="felix22", database="srtest2") #connexion a la base de donnée 
+req=db.cursor(buffered=True)
 client = Client('https://172.20.20.73:5665', 'felix', 'felix22') #connexion a l'API REST
 
 def infoBdd():
     
-    req=db.cursor()
+    
     req.execute("SELECT * FROM Switches INNER JOIN ConfigSwitches ON Switches.ConfigSwitchId = ConfigSwitches.ConfigSwitchId INNER JOIN Modeles ON Switches.ModeleId = Modeles.ModeleId") # Requete envoyer a la BDD
+    
     reponce= req.fetchall() #Recuperation de tous les information qu'il a pus trouver a la suite de la requete 
     
     for row in reponce:
@@ -38,7 +41,7 @@ def infoBdd():
 
 def addHost(ip, switch, idSwitch):
     
-    req=db.cursor()
+    
     req.execute("UPDATE `Switches` SET `Tag` = 0 WHERE `Switches`.`SwitchId`="+str(idSwitch))
     db.commit()
     client.objects.create('Host', switch, ['generic-host'], {'address': ip}) #Ajout d'un d'un switch avec les information recuperer dans la BDD
@@ -64,10 +67,41 @@ def verifier(switch, ip, tag, idSwitch):
   
 def relationSwitch(idSwitch, switch):
     
-    req=db.cursor()
-    req.execute("SELECT * FROM Cascades")
+    req.execute("SELECT s.NomSwitch, s0.NomSwitch FROM Cascades c JOIN Switches s on s.SwitchId = c.SwitchId JOIN Switches s0 on s0.SwitchId = c.SwitchIdLiaison")
     
-    client.objects.create('Dependency', switch, ['generic-host'], {'address': ip}) #Ajout d'un d'un switch avec les information recuperer dans la BDD
+    reponce = req.fetchall()
+    print(reponce)
+    
+    for row in reponce:
+        
+        parent = row[0]
+        enfant = row[1]
+        
+        requests_url = "https://172.20.20.73:5665/v1/objects/Hosts"  
+        
+        headers = {
+            'Accept': 'application/json',
+            'X-HTTP-Method-Override': 'GET'
+        }
+        
+        data = {
+            "attrs": []
+        }
+        
+        r = requests.post(requests_url,
+                          headers=headers,
+                          auth=('felix', 'felix22'),
+                          data=json.dumps(data),
+                          verify=False)
+        print("Request URL: " + str(r.url))
+        print("Status code: " + str(r.status_code))
+
+        if (r.status_code == 200):
+            print("Result: " + json.dumps(r.json()))
+        else:
+            print(r.text)
+            r.raise_for_status()
+    
     
     
     
