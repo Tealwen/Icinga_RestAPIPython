@@ -4,6 +4,7 @@ import requests
 from icinga2api.client import Client
 from icinga2 import Icinga2API
 from enum import Enum 
+from datetime import datetime
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -32,11 +33,11 @@ def infoBdd():
         ipSplit = ipNotSplit.split('/') #On coupe la variable pour lui dire que nous voulont separé , l'ip et le CIDR
         tag=row[6] #Recuperation de l'information tag ( qui nous dit si le switch a deja été pris en compte null = nouveau , 0 = rien a faire, 1 = doit etre modifier)
         
-        print("Information recuperer dans la base de donnée : ")
-        print("ID Du Switch : "+ str(idSwitch))
-        print("Nom Du Switch :"+ nomSwitch)
-        print("Ip : "+ipSplit[0])
-        print("Tag : "+str(tag))
+        print("["+str(datetime.now())+"] :"+" Information recuperer dans la base de donnée : ")
+        print("["+str(datetime.now())+"] :"+" ID Du Switch : "+ str(idSwitch))
+        print("["+str(datetime.now())+"] :"+" Nom Du Switch :"+ nomSwitch)
+        print("["+str(datetime.now())+"] :"+" Ip : "+ipSplit[0])
+        print("["+str(datetime.now())+"] :"+" Tag : "+str(tag))
         
         verifier(nomSwitch, ipSplit[0], tag, idSwitch) #Verification si le switch existe deja sur l'hyperviseur !
     
@@ -54,17 +55,17 @@ def verifier(switch, ip, tag, idSwitch):
     if tag == Tag.New.value: #Si l'information dans la base de donner vaut 1 cela veut dire qu'il est nouveau et qu'il faut donc le crée
         addHost(ip, switch, idSwitch)
     elif tag == Tag.Modify.value: # Si Tag est a 2 le switch est a modifier sur icinga2 
-        print("Le Switch a été modifier")
+        print("["+str(datetime.now())+"] :"+" Le Switch a été modifier")
         print("=================================")
         delete(idSwitch, switch)
         addHost(ip, switch, idSwitch)
     elif tag == Tag.NothingToDo.value: #Si tag est  a 3 il n'a pas ete modifier rien a faire
-        print("Le Switch n'a pas été modifier")
+        print("["+str(datetime.now())+"] :"+" Le Switch n'a pas été modifier")
         print("=================================")
         pass
     elif tag == Tag.Delete.value:
         delete(idSwitch,switch)
-        print("Le Switch "+switch+" a ete surpprimer")
+        print("["+str(datetime.now())+"] :"+" Le Switch "+switch+" a ete surpprimer")
         print("================================")
   
 def relationSwitch(idSwitch, switch):
@@ -92,7 +93,7 @@ def relationSwitch(idSwitch, switch):
     print("Status code: " + str(r.status_code))
 
     if (r.status_code == 200):
-        print("Result: " + json.dumps(r.json()))
+        print("["+str(datetime.now())+"] :"+" Result: " + json.dumps(r.json()))
     else:
         print(r.text)
         r.raise_for_status()
@@ -124,11 +125,12 @@ def relationSwitch(idSwitch, switch):
         print("Status code: " + str(r.status_code))
 
         if (r.status_code == 200):
-            print("Result: " + json.dumps(r.json()))
+            print("["+str(datetime.now())+"] :"+" Result: " + json.dumps(r.json()))
+            print("======================================================================================================")
         else:
             print(r.text)
             r.raise_for_status()
-        
+    print("_________________________________________[Fin des logs pour :]" + str(datetime.now()) +"______________________________________________________")    
     client.actions.restart_process() #Redemarage du service icinga2 pour mettre la map du reseau a jour 
 
 def delete(idSwitch, switch):
