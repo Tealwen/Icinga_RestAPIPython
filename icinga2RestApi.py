@@ -92,7 +92,14 @@ def DelAllSwitch(db, addr, id, password):
                         data=json.dumps(data),
                         verify=False)
     
-    responceRestAPI(r)
+    print("Request URL: " + str(r.url))
+    print("Status code: " + str(r.status_code))
+
+    if (r.status_code == 500):
+        pass
+    else:
+        print(r.text)
+        r.raise_for_status()
     
     req = db.cursor()
     req.execute("UPDATE `Switches` SET `Tag` = 0")
